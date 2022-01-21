@@ -1,0 +1,28 @@
+---
+title: "Factorial Analysis: a practical example"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+This blank document initialize the application of the factorial analysis previously displayed. You have the possibility to work on another dataset, the path and the file are already set.<br><br>
+
+__Question__: Can you extract relevant correlations between variables ?<br>
+__Question__: Can you extract the group of data with higher values of Y3 ?<br>
+__Question__: Is it possible to characterize them as a function of X1, X2, ... ?
+
+
+```{r, include=FALSE, echo=FALSE, message='hide'}
+library(FactoMineR)
+library(factoextra)
+library(reticulate)
+library(ggplot2)
+library(ggpubr)
+```
+<br><br>
+```{r}
+current_path = "/your_path/AIWorkshop/"
+X = read.csv(paste(current_path, "resources/forcefields-dataset.csv", sep=""), sep=",")
+```

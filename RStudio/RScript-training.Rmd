@@ -1,0 +1,255 @@
+---
+title: "Factorial Analysis for Manufacturing Data Processing"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+This tutorial deals with the application of __unsupervised__ techniques to process experimental manufacturing data. You will apply a *Principal Component Analysis* and a *Clustering* technique to obtain a good knowledge on relationships between manufacturing parameters and electrode properties. The idea is to play with the available functions to display how treating the data in a correct way for the extraction of meaningful information.<br>
+In our case study, we analyze the heterogeneity of NMC-622 coated electrodes from an experimental dataset.
+<br><br>
+All following commands have to be copy/paste on your R file you created, just after the code for installing the different libraries.
+
+```{r, include=FALSE, echo=FALSE, message='hide'}
+library(FactoMineR)
+library(factoextra)
+library(reticulate)
+library(ggplot2)
+library(ggpubr)
+```
+
+#### __Set the working directory__
+
+Setting your current working directory can be useful if you wish to work with files within sub-folders.
+```{r}
+current_path = "/media/marduq/One Touch/Personnel/BIG-MAP/AIWorkshop/"
+```
+
+
+#### __Data management__
+
+We define the experimental dataset within our R environment as the variable $X$.
+```{r}
+X = read.csv(paste(current_path, "resources/heterogeneity-dataset.csv", sep=""), sep=",")
+```
+
+#### __Principal Component Analysis__
+
+It is important to mention the number of principal component we want to keep at the end of the analysis (ncp = 5).
+```{r}
+res = PCA(X, scale.unit = TRUE, ncp = 5, graph = FALSE)
+```
+
+<br> 
+We design the analysis as it follows:
+- representation of variables along the principal components: analysis of correlations.<br>
+- analysis on the eigenvalues for selecting the best amount of principal components.<br>
+- representation of individuals along the principal components: analysis on the spread of manufacturing data.
+
+<br><br>
+We plot the projection of variables along the first two principal components (PCs). This reflects how each variable contributes to the implementation of PCs.
+```{r, fig.height = 8, fig.width = 10}
+var.p = fviz_pca_var(res, col.var = "cos2", gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), repel = TRUE)
+ggpar(var.p, title = "1st Principal Plan", font.x = "bold", font.y = "bold", font.title = "bold", subtitle = "",
+      caption = "Source: factoextra/ggpubr", xlab = "Principal Component n°1", ylab = "Principal Component n°2",
+      legend.title = "Cos2", legend.position = "top", ggtheme = theme_gray())
+```
+<br><br>
+Select the number of principal components when the explained variance (ratio) is not decreasing at all.
+```{r, fig.height = 4, fig.width = 10}
+fviz_eig(res, addlabels = TRUE, ylim = c(0, 50), xlab = "Variables", ylab = "% of explained variance", ggtheme = theme_gray(),
+         font.x = "bold", font.y = "bold", font.title = "bold")
+```
+
+<br><br>
+We plot the projection of individuals along the first two principal components (PCs). This reflects how each individual is represented along the PCs. Your are free to change the different axes to display another 2D representation..
+```{r, fig.height = 8, fig.width = 10}
+ind.p = fviz_pca_ind(res, pointsize = "cos2", pointshape = 21, fill = "#E7B800", repel = TRUE)
+ggpar(ind.p, title = "1st Principal Plan", font.x = "bold", font.y = "bold", font.title = "bold", subtitle = "",
+      caption = "Source: factoextra/ggpubr", xlab = "Principal Component n°1", ylab = "Principal Component n°2",
+      legend.title = "Cos2", legend.position = "top", ggtheme = theme_gray())
+```
+
+<br><br>
+
+#### __Clustering of manufacturing conditions__
+
+After setting the PCA, we apply a clustering method to discriminate the manufacturing into groups with the same characteristics. The idea is to obtain significant differences among electrode properties to automatically define heterogenous electrodes.
+```{r}
+res.hcpc <- HCPC(res, nb.clust = -1, consol = TRUE, min = 3, max = 10, graph = FALSE)
+Clusters_data = res.hcpc$data.clust
+```
+
+<br>
+We color-coded the manufacturing data as a function of the cluster they belong to. The PCA well reflects the different clusters along the first principal components. Feel free to modify the parameter *axes* to see the representation of the different clusters.
+```{r, fig.height = 8, fig.width = 10}
+ind.p = fviz_pca_ind(res,
+             axes = c(1, 2),
+             geom.ind = "point", # show points only (nbut not "text")
+             col.ind = Clusters_data$clust, # color by groups
+             # palette = c("#00AFBB", "#E7B800", "#FC4E07"),
+             palette = "Dark2",
+             addEllipses = TRUE, # Concentration ellipses
+             legend.title = "Groups"
+             )
+ggpar(ind.p, title = "1st Principal Plan", font.x = "bold", font.y = "bold", font.title = "bold", subtitle = "",
+      caption = "Source: factoextra/ggpubr", xlab = "Principal Component n°1", ylab = "Principal Component n°2",
+      legend.title = "Cluster", legend.position = "top", ggtheme = theme_gray())
+```
+
+<br><br>
+
+#### __Descriptive Analysis__
+
+Once the groups of manufacturing data are done, we will compare those groups regarding the electrode properties to check if we can set heterogeneous electrodes. A boxplot representation is relevant to compare the distributions of electrode properties.
+```{r, fig.height = 8, fig.width = 10, figures-side, fig.show="hold", out.width="50%"}
+ggplot(Clusters_data, aes(x=clust, y=σ.Mass.Loading.mg.cm2., fill=clust)) + geom_boxplot()+ labs(title="",x="Cluster", y = "Degree of variation - Mass loading") + theme(axis.text=element_text(size=15, face="bold"), axis.title=element_text(size=18,face="bold"))
+ggplot(Clusters_data, aes(x=clust, y=σ.Thickness, fill=clust)) + geom_boxplot()+ labs(title="",x="Cluster", y = "Degree of variation - Thickness") + theme(axis.text=element_text(size=15, face="bold"), axis.title=element_text(size=18,face="bold"))
+```
+
+<br><br>
+To validate the comparison between groups, we apply a statistical analysis to obtain the significant differences. Here are detailed the p-values [[REF1](https://www.jstor.org/stable/41739720?casa_token=kyXFtc5tNDAAAAAA%3A1umA9HjQynPLLlAGg2A7sdMYAI7jbBBM98kXUlVc6RE9f7cB_AZUK74Wds7ur6AffsHUwy_Ep0GcGO100jiJX8AqDZr7Vj86L0BDZ5MjBE7okW2o&seq=1#metadata_info_tab_contents)] for the pairwise comparisons.
+```{r, echo=FALSE}
+for (var in c(4, 5)) {
+  
+  print(names(X[var]))
+  aov = oneway.test(Clusters_data[, var] ~ clust, Clusters_data, var.equal = FALSE)
+  allPairs <- expand.grid(levels(Clusters_data$clust), levels(Clusters_data$clust))
+
+  allPairs <- unique(t(apply(allPairs, 1, sort)))
+  allPairs <- allPairs[ allPairs[,1] != allPairs[,2], ]
+  
+  allResults <- apply(allPairs, 1, function(p) {
+    dat <- Clusters_data[ Clusters_data$clust %in% p, ]
+    ret <- oneway.test(dat[, var] ~ clust, data = dat, na.action = na.omit, var.equal = FALSE)
+    ret$groups <- p
+    ret
+})
+  
+  mm <- diag(length(levels(Clusters_data$clust)))
+  dimnames(mm) <- list(levels(Clusters_data$clust), levels(Clusters_data$clust))
+  pMatrix <- lapply(allResults, function(res) {
+      ## not fond of out-of-scope assignment ...
+      mm[res$groups[1], res$groups[2]] <<- mm[res$groups[2], res$groups[1]] <<- res$p.value
+  })
+  print(mm)
+  cat("\n")
+}
+```
+
+<br><br>
+
+### Conclusions
+We applied 2 different unsupervised approaches. One is related to the dimensionality reduction to obtain meanigful representations of raw data. And another one for grouping manufacturing data with same characteristics.<br>
+The visualization through a boxplot represnetation enables to check the differences between groups, and even to complete the analysis with a statistical point of view.
+<br><br>
+Finally, we obtain:
+- One group of electrodes has higher variations in mass loading.<br>
+- Two groups have higher variations in thickness.<br>
+<br><br>
+
+__Question__: Can we obtain a better knowledge on heterogeneity definition ?
+
+<br><br>
+We removed the variables that represent low values of *cos2* within the previous PCA. By reducing the amount of initial variables we will increase the percentage of explained variance along the first principal components. __The selection of variables depends only on the threshold you empirically set. __
+```{r, fig.height = 8, fig.width = 10, fig.show="hold", out.width="50%"}
+ res <- PCA(X[, -c(1,2,15,16,17)], scale.unit = TRUE, ncp = 3, graph = FALSE)
+
+ fviz_eig(res, addlabels = TRUE, ylim = c(0, 70), xlab = "Variables", ylab = "% of explained variance", ggtheme = theme_gray(),
+          font.x = "bold", font.y = "bold", font.title = "bold")
+ res.hcpc <- HCPC(res, nb.clust = -1, consol = TRUE, min = 3, max = 10, graph = FALSE)
+ Clusters_data = res.hcpc$data.clust
+ ind.p = fviz_pca_ind(res,
+              geom.ind = "point", # show points only (nbut not "text")
+              col.ind = Clusters_data$clust, # color by groups
+              palette = "Dark2",
+              addEllipses = TRUE, # Concentration ellipses
+              legend.title = "Groups"
+              )
+ ggpar(ind.p, title = "1st Principal Plan", font.x = "bold", font.y = "bold", font.title = "bold", subtitle = "",
+      caption = "Source: factoextra/ggpubr", xlab = "Principal Component n°1", ylab = "Principal Component n°2",
+      legend.title = "Cluster", legend.position = "top", ggtheme = theme_gray())
+```
+
+```{r, fig.height = 8, fig.width = 10, fig.show="hold", out.width="50%"}
+ggplot(Clusters_data, aes(x=clust, y=σ.Mass.Loading.mg.cm2., fill=clust)) + geom_boxplot()+ labs(title="",x="Cluster", y = "Degree of variation - Mass loading") + theme(axis.text=element_text(size=25, face="bold"), axis.title=element_text(size=30,face="bold"))
+ggplot(Clusters_data, aes(x=clust, y=σ.Thickness, fill=clust)) + geom_boxplot()+ labs(title="",x="Cluster", y = "Degree of variation - Thickness") + theme(axis.text=element_text(size=25, face="bold"), axis.title=element_text(size=30,face="bold"))
+```
+
+```{r, echo=FALSE}
+for (var in c(4, 5)) {
+  
+  print(names(X)[var])
+  aov = oneway.test(Clusters_data[, var] ~ clust, Clusters_data, var.equal = FALSE)
+  allPairs <- expand.grid(levels(Clusters_data$clust), levels(Clusters_data$clust))
+
+  allPairs <- unique(t(apply(allPairs, 1, sort)))
+  allPairs <- allPairs[ allPairs[,1] != allPairs[,2], ]
+  
+  allResults <- apply(allPairs, 1, function(p) {
+    dat <- Clusters_data[ Clusters_data$clust %in% p, ]
+    ret <- oneway.test(dat[, var] ~ clust, data = dat, na.action = na.omit, var.equal = FALSE)
+    ret$groups <- p
+    ret
+})
+  
+  mm <- diag(length(levels(Clusters_data$clust)))
+  dimnames(mm) <- list(levels(Clusters_data$clust), levels(Clusters_data$clust))
+  pMatrix <- lapply(allResults, function(res) {
+      ## not fond of out-of-scope assignment ...
+      mm[res$groups[1], res$groups[2]] <<- mm[res$groups[2], res$groups[1]] <<- res$p.value
+  })
+  print(mm)
+  cat("\n")
+}
+```
+
+<br><br>
+
+### Conclusions
+By adjusting the PCA, we defined in another way the heterogeneous electrodes: <br>
+- One group of electrodes has higher variations in mass loading.<br>
+- One group of electrodes has higher variations in thickness<br>
+- The two remained groups are considered as homogeneous in both properties.<br>
+<br><br><br>
+
+
+### __Factorial Analysis for Mixed Data__
+
+Along the manufacturing process, we usually consider the parameters as continuum variables. More precisely when designing experiments, this increase the capabilities to target the best set of parameters for electrode properties optimization. In our case study, we considered the 3 different parameter as quantitatives, while the application for qualitative variables is available. This affects the result of the data analysis. We show below the code for the application of the Factorial Analysis for Mixed Data.
+<br><br>
+
+We define the qualitative variables of the data analysis.
+```{r}
+X = within(X, {
+  Active.Material.... <- factor(Active.Material....)
+  Comma.Gap..μm. <- factor(Comma.Gap..μm.)
+})
+```
+
+```{r, fig.height = 8, fig.width = 10, fig.show="hold", out.width="50%"}
+res = FAMD(X, ncp=5, graph=FALSE)
+
+fviz_eig(res, addlabels = TRUE, ylim = c(0, 40), xlab = "Variables", ylab = "% of explained variance", ggtheme = theme_gray(),
+           font.x = "bold", font.y = "bold", font.title = "bold")
+var.p = fviz_famd_var(res, "quanti.var", axes=c(1,2), col.var = "cos2", gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), repel = TRUE)
+ggpar(var.p, title = "1st Principal Plan", font.x = "bold", font.y = "bold", font.title = "bold", subtitle = "",
+       caption = "Source: factoextra/ggpubr", xlab = "Principal Component n°1", ylab = "Principal Component n°2",
+       legend.title = "Cos2", legend.position = "top", ggtheme = theme_gray())
+```
+
+```{r, fig.height = 8, fig.width = 10, fig.show="hold", out.width="50%"}
+res.hcpc <- HCPC(res, nb.clust = -1, consol = TRUE, min = 3, max = 10, graph = FALSE)
+Clusters_data = res.hcpc$data.clust
+ 
+ggplot(Clusters_data, aes(x=clust, y=σ.Mass.Loading.mg.cm2., fill=clust)) + geom_boxplot()+ labs(title="",x="Cluster", y = "Degree of variation - Mass loading") + theme(axis.text=element_text(size=25, face="bold"), axis.title=element_text(size=30,face="bold"))
+ggplot(Clusters_data, aes(x=clust, y=σ.Thickness, fill=clust)) + geom_boxplot()+ labs(title="",x="Cluster", y = "Degree of variation - Thickness")+ theme(axis.text=element_text(size=25, face="bold"), axis.title=element_text(size=30,face="bold"))
+```
+
+
+
+
+
+
