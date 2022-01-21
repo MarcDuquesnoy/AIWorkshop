@@ -1,4 +1,4 @@
-![BMW](https://user-images.githubusercontent.com/50483699/150541294-2b2f17ca-1f50-4770-9378-cedca189b493.png)
+![logobm](https://user-images.githubusercontent.com/50483699/150559101-7c1b3799-4f72-43e0-8abc-4fe8fe912329.png)
 
 
 AI applied to battery manufacturing process

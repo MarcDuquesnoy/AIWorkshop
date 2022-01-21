@@ -1,0 +1,48 @@
+---
+title: "Installation of R packages"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+This tutorial provides you the code to use on your own R environment, in order to install (or load) relevant libraries for the training session. Please note you are invited to create a new __R__, and paste the following command lines at the top in order to properly initialize the file.
+
+
+```{r, include=TRUE, echo=TRUE, message='hide'}
+tryCatch(expr = {
+  library(FactoMineR)
+},
+warning = function(w){
+  install.packages("FactoMineR", repos="http://cran.rstudio.com")
+})
+
+tryCatch(expr = {
+  library(factoextra)
+},
+warning = function(w){
+  install.packages("factoextra", repos="http://cran.rstudio.com")
+})
+
+tryCatch(expr = {
+  library(reticulate)
+},
+warning = function(w){
+  install.packages("reticulate", repos="http://cran.rstudio.com")
+})
+
+tryCatch(expr = {
+  library(ggplot2)
+},
+warning = function(w){
+  install.packages("ggplot2", repos="http://cran.rstudio.com")
+})
+
+tryCatch(expr = {
+  library(ggpubr)
+},
+warning = function(w){
+  install.packages("ggpubr", repos="http://cran.rstudio.com")
+})
+```
