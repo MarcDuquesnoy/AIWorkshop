@@ -23,6 +23,14 @@ library(ggpubr)
 ```
 <br><br>
 ```{r}
-current_path = "/your_path/AIWorkshop/"
+current_path = "/media/marduq/One Touch/Personnel/BIG-MAP/AIWorkshop/"
 X = read.csv(paste(current_path, "resources/forcefields-dataset.csv", sep=""), sep=",")
+```
+
+```{r, fig.height = 8, fig.width = 10}
+res = PCA(X, scale.unit = TRUE, ncp = 5, graph = FALSE)
+var.p = fviz_pca_var(res, axes=c(1, 2), col.var = "cos2", gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), repel = TRUE)
+ggpar(var.p, title = "1st Principal Plan", font.x = "bold", font.y = "bold", font.title = "bold", subtitle = "",
+      caption = "Source: factoextra/ggpubr", xlab = "Principal Component n°1", ylab = "Principal Component n°2",
+      legend.title = "Cos2", legend.position = "top", ggtheme = theme_gray())
 ```
